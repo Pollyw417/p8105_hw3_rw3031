@@ -9,6 +9,8 @@ output: github_document
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(lubridate)
+library(patchwork)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -27,5 +29,116 @@ scale_colour_discrete = scale_color_viridis_d
 scale_fill_discrete = scale_color_viridis_d
 ```
 
+# Problem 1 
+
+load the NY NOAA dataset
+```{r}
+library(p8105.datasets)
+data("ny_noaa")
+```
+
+### explore the NY NOAA dataset
+
+```{r}
+nrow(ny_noaa)
+ncol(ny_noaa)
+summary(ny_noaa)
+
+ny_noaa |> 
+  ggplot(aes(x = prcp)) + 
+  geom_histogram()
+
+ny_noaa |> 
+  ggplot(aes(x = snow)) + 
+  geom_histogram()
+
+ny_noaa |> 
+  ggplot(aes(x = snwd)) + 
+  geom_histogram()
+```
+There are 2595176 observations and 7 variables (id, date, prcp, snow, snwd, 
+tmax, tmin) in dataset. The variable tmax and tmin are imported as character variable.
+
+The earliest date for the data is 1981-01-01 and the most recent date is 2012-12-31.
+
+Precipitation ranges from 0 to 22860 (tenths of mm) and 145838 observations do not 
+report precipitation data. Snowfall range from -13 mm to 10160 mm, and 381221 
+observations' data on snowfall is missing, Snow depth range from 0 to 9195 mmm 
+and 591786 observations do not have snow depth data. All three variables are highly
+right skewed since there are a lot of days that there is no rain or snow
+
+```{r}
+ny_noaa = 
+  ny_noaa|>
+  mutate(
+    tmax = as.numeric(tmax),
+    tmin = as.numeric(tmin))
+
+summary(ny_noaa)
+```
+
+I change the character variable tmax and tmin into numeric instead. 
+
+There are more than 1100,000 observations that have the maximum and minimum temperature 
+missing within the dataset which is more than 40% of the observations. 
+
+### cleaning the NY_NOAA data 
+
+Create separate variables for year, month, and day. 
+```{r}
+ny_noaa=
+ny_noaa|>
+  mutate(year = year(date),
+         month = month(date),
+         day = day(date))
+```
+
+```{r}
+ny_noaa |> 
+  ggplot(aes(x = snow)) + 
+  geom_histogram()
+```
+For snowfall the most commonly observed value is 0 since except for cold winter time
+there is not any snow. 
+
+### average temperatue in January and July
+
+```{r}
+ny_noaa|>
+  filter(month ==1 | month == 7)|>
+  group_by(year,month)|>
+  summarize(avg_tmax = mean(tmax, na.rm = TRUE))|>
+  ggplot(aes(x = year, y=avg_tmax))+
+  geom_point()+geom_line()+
+  facet_grid(.~month)
+```
+
+The average maximum temperature in January and July fluctuates a lot. The years with higher tmax in January tend to have higher tmax in July as well. 
+
+### tmax and tmin and distribution of snowfall
+
+```{r}
+tmax_tmin_p=
+ny_noaa|>
+  ggplot(aes(x= tmax, y=tmin))+
+  geom_bin2d()+
+  theme(legend.position = "right")
+
+snow_p=
+ny_noaa|>
+  filter(snow>0, snow<100)|>
+  group_by(year)|>
+  ggplot(aes(x=snow))+
+  geom_histogram()
+
+tmax_tmin_p + snow_p
+```
 
 
+
+# Problem 2 
+
+
+
+
+# Problem 3 
