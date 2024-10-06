@@ -134,10 +134,23 @@ ny_noaa|>
 tmax_tmin_p + snow_p
 ```
 
-
-
 # Problem 2 
 
+import the datasets 
+
+```{r}
+demo =
+  read_csv(file = "./nhanes_covar.csv", na = c(".", "NA", ""))|>
+  janitor::clean_names()
+
+
+accel =
+  read_csv(file = "./nhanes_accel.csv", na = c(".", "NA", ""))|>
+  janitor::clean_names()|>
+  pivot_longer(
+    min1
+  )
+```
 
 
 
