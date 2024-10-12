@@ -144,16 +144,6 @@ ny_noaa|>
   labs(x="snowfall (mm)")
 ```
 
-
-```{r}
-ny_noaa |> 
-  filter(snow > 0 & snow < 100) |> 
-  ggplot(aes(x=year, y=snow)) +
-  geom_violin() +
-  labs(title = "Snowfall Distribution (0 < Snowfall < 100) by Year", x = "Snowfall (mm)", y = "Year")
-```
-
-
 ```{r}
 tmax_tmin_p + snow_p 
 ```
