@@ -7,7 +7,7 @@ output: github_document
 
 ## library and visual theme set up
 
-```{r, include=FALSE， message = FALSE, Warning = FALSE}
+```{r, include=FALSE, message = FALSE, Warning = FALSE}
 library(tidyverse)
 library(lubridate)
 library(patchwork)
@@ -85,20 +85,28 @@ missing within the dataset which is more than 40% of the observations.
 
 ### cleaning the NY_NOAA data 
 
-Create separate variables for year, month, and day. 
+I created separate variable for year, month, date and change the unit of temperature and percipitation to degree celcius and mm.
+
 ```{r}
 ny_noaa=
 ny_noaa|>
-  mutate(year = year(date),
-         month = month(date),
-         day = day(date))
+  mutate(
+    year = year(date),
+    month = month(date),
+    day = day(date),
+    tmax = tmax/10,
+    tmin = tmin/10,
+    prcp = prcp/10
+  )
 ```
 
 ```{r}
 ny_noaa |> 
   ggplot(aes(x = snow)) + 
-  geom_histogram()
+  geom_histogram(binwidth = 500)+
+  labs(x = "Snowfall (mm)")
 ```
+
 For snowfall the most commonly observed value is 0 since except for cold winter time
 there is not any snow. 
 
@@ -111,10 +119,11 @@ ny_noaa|>
   summarize(avg_tmax = mean(tmax, na.rm = TRUE))|>
   ggplot(aes(x = year, y=avg_tmax))+
   geom_point()+geom_line()+
-  facet_grid(.~month)
+  facet_grid(.~month)+
+  labs( y = "average maximum temperature (°C)")
 ```
 
-The average maximum temperature in January and July fluctuates a lot. The years with higher tmax in January tend to have higher tmax in July as well. 
+The average maximum temerpature in Janurary ranges from -5 degree celcius to 5 degree celcius, while the average mamximum temperature in July is around 25 to 30 degress celcius. The average maximum temperature in January and July fluctuates a lot. The difference in average maximum temperature in January across the years is greater than the difference in average maximum temperature in July acorss the years. The years with higher tmax in January tend to have higher tmax in July as well. 
 
 ### tmax and tmin and distribution of snowfall
 
@@ -122,18 +131,33 @@ The average maximum temperature in January and July fluctuates a lot. The years 
 tmax_tmin_p=
 ny_noaa|>
   ggplot(aes(x= tmax, y=tmin))+
-  geom_bin2d()+
-  theme(legend.position = "right")
+  geom_hex()+
+  theme(legend.position = "bottom", legend.key.width = unit(1,"null"))+
+  labs(x = "maximum temperature(°C)", y = "minimum temperature(°C)")
 
 snow_p=
 ny_noaa|>
   filter(snow>0, snow<100)|>
-  group_by(year)|>
-  ggplot(aes(x=snow))+
-  geom_histogram()
-
-tmax_tmin_p + snow_p
+  ggplot(aes(x=year, y=snow))+
+  geom_violin()+
+  theme()
+  labs(x="snowfall (mm)")
 ```
+
+
+```{r}
+ny_noaa |> 
+  filter(snow > 0 & snow < 100) |> 
+  ggplot(aes(x=year, y=snow)) +
+  geom_violin() +
+  labs(title = "Snowfall Distribution (0 < Snowfall < 100) by Year", x = "Snowfall (mm)", y = "Year")
+```
+
+
+```{r}
+tmax_tmin_p + snow_p 
+```
+The distribution of the maximum and minimum temperature of the day tend to follow a linear relationship, with higher maximum temperature, it also tend to have higher minimum temperature. The distribution of snowfall indicates that for the most common snowfall between 0 to 100 mm is 25 mm. 
 
 # Problem 2 
 
@@ -149,12 +173,11 @@ demo =
   filter(age >=21)|>
   drop_na()|>
   mutate(sex = as.factor(ifelse(sex == 2, "Female", "Male")),
-         education = as.factor(case_when(
-           education == 1 ~ "Less than high school",
-           education == 2 ~ "High school equivalent",
-           education == 3 ~ "More than high school", 
-           TRUE ~ NA
-         )))
+         education = factor(education,
+                            levels = c(1,2,3),
+                            labels = c("Less than high school",
+                                       "High school equivalent",
+                                        "More than high school")))
 ```
 
 #### import the accel data and merge
@@ -186,9 +209,9 @@ study have more than high school education.
 
 ```{r}
 nhanes|>
-  ggplot(aes(x=age, fill=sex))+
+  ggplot(aes(x=age, y=sex))+
   geom_boxplot()+
-  facet_grid(sex ~ education)
+  facet_grid(~ education)
 ```
 The mean for age within the group with high school equivalent education is higher 
 in female compared to male, as well as the first and third quartile. The distribution
@@ -210,12 +233,33 @@ nhanes|>
   summarize(total=sum(mims_value))|>
   ggplot(aes(x=age, y=total, color = sex))+
   geom_point()+geom_smooth()+
-  facet_grid(~education)
+  facet_grid(~education)+
+  labs(y="total daily activity")
 ```
 In the group with less than high school education, the level of physical activity 
 decrease signficantly as age increases. Female in this group is more active than man before 40 in this group. For the group with high school equivalent education, the level of physical activity peaks at the age of 40, and female is in general more active than man across all age. In the group with more than high school education, both men and women's level of physical activity decrease only slightly overtime, and female is in general more active than male. 
 
+```{r}
+nhanes|>
+  pivot_longer(
+    min1:min1440,
+    names_to = "mim_min",
+    names_prefix = "min",
+    values_to = "mims_value"
+  )|>
+  mutate(mim_min = as.numeric(mim_min))|>
+  group_by(sex, education)|>
+  ggplot(aes(x=mim_min, y=mims_value, color = sex))+
+  geom_point(alpha= 0.005)+geom_smooth(aes(color = sex), se=FALSE, size = 1.5)+
+  facet_wrap(~education, nrow = 3)+
+  scale_x_continuous(breaks = seq(0, 1440, by = 120))+
+  scale_y_continuous(limit=c(0,30))+
+  labs(x="time of a day(mins)", y="physical activity score")
+```
 
+Physcial activity level gradually increase around 360 minutes which is around 6 am in all three education levels and peaks around 720 minutes which is 12 pm. The level of physical activity gradually decrease after 1200 minutes which is 8 pm. 
+
+The female are in general more physcially active than male in the group with more than high school education. Female in the group with high school equivalent education group tend to be more physically active than male in the morning. There is no difference in level of physical activity across the day by sex for the group with less than high school education.
 
 # Problem 3 
 
